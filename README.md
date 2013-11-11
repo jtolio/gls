@@ -1,0 +1,4 @@
+gls
+===
+
+Goroutine local storage
