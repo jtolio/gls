@@ -1,6 +1,7 @@
-package context
+package gls
 
 import (
+	"fmt"
 	"sync"
 	"testing"
 )
@@ -36,11 +37,11 @@ func TestContexts(t *testing.T) {
 	}
 
 	Check("", "", "", "")
-	mgr2.AddValues(Values{"key1": "val1c"}, func() {
+	mgr2.SetValues(Values{"key1": "val1c"}, func() {
 		Check("", "", "val1c", "")
-		mgr1.AddValues(Values{"key1": "val1a"}, func() {
+		mgr1.SetValues(Values{"key1": "val1a"}, func() {
 			Check("val1a", "", "val1c", "")
-			mgr1.AddValues(Values{"key2": "val1b"}, func() {
+			mgr1.SetValues(Values{"key2": "val1b"}, func() {
 				Check("val1a", "val1b", "val1c", "")
 				var wg sync.WaitGroup
 				wg.Add(2)
@@ -56,4 +57,61 @@ func TestContexts(t *testing.T) {
 			})
 		})
 	})
+}
+
+func ExampleContextManager_SetValues() {
+	var (
+		mgr            = NewContextManager()
+		request_id_key = GenSym()
+	)
+
+	MyLog := func() {
+		if request_id, ok := mgr.GetValue(request_id_key); ok {
+			fmt.Println("My request id is:", request_id)
+		} else {
+			fmt.Println("No request id found")
+		}
+	}
+
+	mgr.SetValues(Values{request_id_key: "12345"}, func() {
+		MyLog()
+	})
+	MyLog()
+
+	// Output: My request id is: 12345
+	// No request id found
+}
+
+func ExampleGo() {
+	var (
+		mgr            = NewContextManager()
+		request_id_key = GenSym()
+	)
+
+	MyLog := func() {
+		if request_id, ok := mgr.GetValue(request_id_key); ok {
+			fmt.Println("My request id is:", request_id)
+		} else {
+			fmt.Println("No request id found")
+		}
+	}
+
+	mgr.SetValues(Values{request_id_key: "12345"}, func() {
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			MyLog()
+		}()
+		wg.Wait()
+		wg.Add(1)
+		Go(func() {
+			defer wg.Done()
+			MyLog()
+		})
+		wg.Wait()
+	})
+
+	// Output: No request id found
+	// My request id is: 12345
 }
