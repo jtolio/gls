@@ -61,4 +61,4 @@ this library.
 
 ### Docs ###
 
-Please see the docs at http://godoc.org/github.com/SpaceMonkeyInc/gls
+Please see the docs at http://godoc.org/github.com/jtolds/gls
