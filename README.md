@@ -51,6 +51,14 @@ the stack looking at the callers list.
 We then use these tags as an index into a traditional map for implementing
 this library.
 
+### What are people saying? ###
+
+"Wow, that's horrifying."
+
+"This is the most terrible thing I have seen in a very long time."
+
+"Where is it getting a context from? Is this serializing all the requests? What the heck is the client being bound to? What are these tags? Why does he need callers? Oh god no. No no no."
+
 ### Docs ###
 
 Please see the docs at http://godoc.org/github.com/SpaceMonkeyInc/gls
