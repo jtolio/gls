@@ -115,3 +115,25 @@ func ExampleGo() {
 	// Output: No request id found
 	// My request id is: 12345
 }
+
+func BenchmarkGetValue(b *testing.B) {
+	mgr := NewContextManager()
+	mgr.SetValues(Values{"test_key": "test_val"}, func() {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			val, ok := mgr.GetValue("test_key")
+			if !ok || val != "test_val" {
+				b.FailNow()
+			}
+		}
+	})
+}
+
+func BenchmarkSetValues(b *testing.B) {
+	mgr := NewContextManager()
+	for i := 0; i < b.N/2; i++ {
+		mgr.SetValues(Values{"test_key": "test_val"}, func() {
+			mgr.SetValues(Values{"test_key2": "test_val2"}, func() {})
+		})
+	}
+}
