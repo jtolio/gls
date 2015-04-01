@@ -69,8 +69,20 @@ this library.
 
 "This is the most terrible thing I have seen in a very long time."
 
-"Where is it getting a context from? Is this serializing all the requests? What the heck is the client being bound to? What are these tags? Why does he need callers? Oh god no. No no no."
+"Where is it getting a context from? Is this serializing all the requests? 
+What the heck is the client being bound to? What are these tags? Why does he 
+need callers? Oh god no. No no no."
 
 ### Docs ###
 
 Please see the docs at http://godoc.org/github.com/jtolds/gls
+
+### Related ###
+
+If you're okay relying on the string format of the current runtime stacktrace 
+including a unique goroutine id (not guaranteed by the spec or anything, but 
+very unlikely to change within a Go release), you might be able to squeeze 
+out a bit more performance by using this similar library, inspired by some 
+code Brad Fitzpatrick wrote for debugging his HTTP/2 library: 
+https://github.com/tylerb/gls. (In contrast, jtolds/gls doesn't require 
+any knowledge of the string format of the runtime stacktrace)
