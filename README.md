@@ -3,6 +3,18 @@ gls
 
 Goroutine local storage
 
+### IMPORTANT NOTE ###
+
+It is my duty to point you to https://blog.golang.org/context, which is how 
+Google solves all of the problems you'd perhaps consider using this package
+for at scale. 
+
+One downside to Google's approach is that *all* of your functions must have
+a new first argument, but after clearing that hurdle everything else is much
+better.
+
+If you aren't interested in this warning, read on.
+
 ### Huhwaht? Why? ###
 
 Every so often, a thread shows up on the
