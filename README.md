@@ -84,5 +84,6 @@ including a unique goroutine id (not guaranteed by the spec or anything, but
 very unlikely to change within a Go release), you might be able to squeeze 
 out a bit more performance by using this similar library, inspired by some 
 code Brad Fitzpatrick wrote for debugging his HTTP/2 library: 
-https://github.com/tylerb/gls. (In contrast, jtolds/gls doesn't require 
-any knowledge of the string format of the runtime stacktrace)
+https://github.com/tylerb/gls (in contrast, jtolds/gls doesn't require 
+any knowledge of the string format of the runtime stacktrace, which 
+probably adds unnecessary overhead).
