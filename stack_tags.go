@@ -73,7 +73,13 @@ func _m(tag_remainder uint, cb func()) {
 	}
 }
 
-func readStackTags(stack []uintptr) (tags []uint) {
+func currentStack(skip int) []uintptr {
+	stack := make([]uintptr, maxCallers)
+	return stack[:runtime.Callers(3+skip, stack)]
+}
+
+func readStackTags(skip int) (tags []uint) {
+	stack := currentStack(skip)
 	var current_tag uint
 	for _, pc := range stack {
 		pc = runtime.FuncForPC(pc).Entry()
