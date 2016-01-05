@@ -1,12 +1,15 @@
-// +build !js
+// +build js
 
 package gls
 
-// so, basically, we're going to encode integer tags in base-16 on the stack
+// This file is used for GopherJS builds, which don't have normal runtime support
 
 import (
-	"reflect"
-	"runtime"
+	"regexp"
+	"strconv"
+	"strings"
+
+	"github.com/gopherjs/gopherjs/js"
 )
 
 const (
@@ -41,9 +44,35 @@ func markF(tag uint, cb func()) { _m(tag, cb) }
 var pc_lookup = make(map[uintptr]int8, 17)
 var mark_lookup [16]func(uint, func())
 
+var stackRE = regexp.MustCompile("\\s+at (\\S*) \\([^:]+:(\\d+):(\\d+)")
+
+func findPtr() uintptr {
+	jsStack := js.Global.Get("Error").New().Get("stack").Call("split", "\n")
+	for i := 1; i < jsStack.Get("length").Int(); i++ {
+		item := jsStack.Index(i).String()
+		matches := stackRE.FindAllStringSubmatch(item, -1)
+		if matches == nil {
+			return 0
+		}
+		pkgPath := matches[0][1]
+		if strings.HasPrefix(pkgPath, "$packages.github.com/jtolds/gls.mark") {
+			line, _ := strconv.Atoi(matches[0][2])
+			char, _ := strconv.Atoi(matches[0][3])
+			x := (uintptr(line) << 16) | uintptr(char)
+			return x
+		}
+	}
+
+	return 0
+}
+
 func init() {
 	setEntries := func(f func(uint, func()), v int8) {
-		pc_lookup[reflect.ValueOf(f).Pointer()] = v
+		var ptr uintptr
+		f(0, func() {
+			ptr = findPtr()
+		})
+		pc_lookup[ptr] = v
 		if v >= 0 {
 			mark_lookup[v] = f
 		}
@@ -75,16 +104,27 @@ func _m(tag_remainder uint, cb func()) {
 	}
 }
 
-func currentStack(skip int) []uintptr {
-	stack := make([]uintptr, maxCallers)
-	return stack[:runtime.Callers(3+skip, stack)]
+func currentStack(skip int) (stack []uintptr) {
+	jsStack := js.Global.Get("Error").New().Get("stack").Call("split", "\n")
+	for i := skip + 2; i < jsStack.Get("length").Int(); i++ {
+		item := jsStack.Index(i).String()
+		matches := stackRE.FindAllStringSubmatch(item, -1)
+		if matches == nil {
+			return stack
+		}
+		line, _ := strconv.Atoi(matches[0][2])
+		char, _ := strconv.Atoi(matches[0][3])
+		x := (uintptr(line) << 16) | uintptr(char)&0xffff
+		stack = append(stack, x)
+	}
+
+	return stack
 }
 
 func readStackTags(skip int) (tags []uint) {
 	stack := currentStack(skip)
 	var current_tag uint
 	for _, pc := range stack {
-		pc = runtime.FuncForPC(pc).Entry()
 		val, ok := pc_lookup[pc]
 		if !ok {
 			continue
