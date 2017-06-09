@@ -1,11 +1,10 @@
 package gls
 
 import (
-	"sync"
+	"sync/atomic"
 )
 
 var (
-	keyMtx     sync.Mutex
 	keyCounter uint64
 )
 
@@ -14,8 +13,5 @@ type ContextKey struct{ id uint64 }
 
 // GenSym will return a brand new, never-before-used ContextKey
 func GenSym() ContextKey {
-	keyMtx.Lock()
-	defer keyMtx.Unlock()
-	keyCounter += 1
-	return ContextKey{id: keyCounter}
+	return ContextKey{id: atomic.AddUint64(&keyCounter, 1)}
 }
