@@ -5,6 +5,11 @@ import (
 	"sync"
 )
 
+const (
+	initialMaxGoroutineCount = 1024
+	extendUnit               = 128
+)
+
 var (
 	mgrRegistry    = make(map[*ContextManager]bool)
 	mgrRegistryMtx sync.RWMutex
@@ -20,15 +25,17 @@ type Values map[interface{}]interface{}
 // class of context variables. You should use NewContextManager for
 // construction.
 type ContextManager struct {
-	mtx    sync.Mutex
-	values map[uint]Values
+	extendLock               sync.RWMutex
+	values                   []Values
+	currentMaxGoroutineCount int
 }
 
 // NewContextManager returns a brand new ContextManager. It also registers the
 // new ContextManager in the ContextManager registry which is used by the Go
 // method. ContextManagers are typically defined globally at package scope.
 func NewContextManager() *ContextManager {
-	mgr := &ContextManager{values: make(map[uint]Values)}
+	mgr := &ContextManager{values: make([]Values, initialMaxGoroutineCount)}
+	mgr.currentMaxGoroutineCount = len(mgr.values)
 	mgrRegistryMtx.Lock()
 	defer mgrRegistryMtx.Unlock()
 	mgrRegistry[mgr] = true
@@ -60,14 +67,17 @@ func (m *ContextManager) SetValues(new_values Values, context_call func()) {
 	mutated_keys := make([]interface{}, 0, len(new_values))
 	mutated_vals := make(Values, len(new_values))
 
-	EnsureGoroutineId(func(gid uint) {
-		m.mtx.Lock()
-		state, found := m.values[gid]
-		if !found {
+	EnsureGoroutineId(func(gid uint32) {
+		var found bool
+		m.extendIfNeeded(gid)
+
+		state := m.values[gid]
+		if state != nil {
+			found = true
+		} else {
 			state = make(Values, len(new_values))
 			m.values[gid] = state
 		}
-		m.mtx.Unlock()
 
 		for key, new_val := range new_values {
 			mutated_keys = append(mutated_keys, key)
@@ -79,9 +89,7 @@ func (m *ContextManager) SetValues(new_values Values, context_call func()) {
 
 		defer func() {
 			if !found {
-				m.mtx.Lock()
-				delete(m.values, gid)
-				m.mtx.Unlock()
+				m.values[gid] = nil
 				return
 			}
 
@@ -108,11 +116,9 @@ func (m *ContextManager) GetValue(key interface{}) (
 		return nil, false
 	}
 
-	m.mtx.Lock()
-	state, found := m.values[gid]
-	m.mtx.Unlock()
+	state := m.values[gid]
 
-	if !found {
+	if state == nil {
 		return nil, false
 	}
 	value, ok = state[key]
@@ -124,9 +130,7 @@ func (m *ContextManager) getValues() Values {
 	if !ok {
 		return nil
 	}
-	m.mtx.Lock()
-	state, _ := m.values[gid]
-	m.mtx.Unlock()
+	state := m.values[gid]
 	return state
 }
 
@@ -150,4 +154,24 @@ func Go(cb func()) {
 	}
 
 	go cb()
+}
+
+func (m *ContextManager) extend(gid uint32) {
+	m.extendLock.Lock()
+	defer m.extendLock.Unlock()
+	if gid >= uint32(m.currentMaxGoroutineCount) {
+		unit := ((gid-uint32(m.currentMaxGoroutineCount))/extendUnit + 1) * extendUnit
+		m.values = append(m.values, make([]Values, unit)...)
+		m.currentMaxGoroutineCount += int(unit)
+	}
+}
+
+func (m *ContextManager) extendIfNeeded(gid uint32) {
+	m.extendLock.RLock()
+	if gid >= uint32(m.currentMaxGoroutineCount) {
+		m.extendLock.RUnlock()
+		m.extend(gid)
+	} else {
+		m.extendLock.RUnlock()
+	}
 }

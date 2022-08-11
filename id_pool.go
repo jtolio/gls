@@ -6,29 +6,23 @@ package gls
 
 import (
 	"sync"
+	"sync/atomic"
 )
 
 type idPool struct {
-	mtx      sync.Mutex
-	released []uint
-	max_id   uint
+	sync.Pool
+	curID uint32
 }
 
-func (p *idPool) Acquire() (id uint) {
-	p.mtx.Lock()
-	defer p.mtx.Unlock()
-	if len(p.released) > 0 {
-		id = p.released[len(p.released)-1]
-		p.released = p.released[:len(p.released)-1]
-		return id
-	}
-	id = p.max_id
-	p.max_id++
-	return id
+func (p *idPool) newID() uint32 {
+	curID := atomic.AddUint32(&p.curID, 1)
+	return curID - 1
 }
 
-func (p *idPool) Release(id uint) {
-	p.mtx.Lock()
-	defer p.mtx.Unlock()
-	p.released = append(p.released, id)
+func (p *idPool) Acquire() (id uint32) {
+	return p.Get().(uint32)
+}
+
+func (p *idPool) Release(id uint32) {
+	p.Put(id)
 }
