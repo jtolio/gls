@@ -9,11 +9,11 @@ const (
 
 var (
 	pc_lookup   = make(map[uintptr]int8, 17)
-	mark_lookup [16]func(uint, func())
+	mark_lookup [16]func(uint32, func())
 )
 
 func init() {
-	setEntries := func(f func(uint, func()), v int8) {
+	setEntries := func(f func(uint32, func()), v int8) {
 		var ptr uintptr
 		f(0, func() {
 			ptr = findPtr()
@@ -40,9 +40,11 @@ func init() {
 	setEntries(github_com_jtolds_gls_markD, 0xd)
 	setEntries(github_com_jtolds_gls_markE, 0xe)
 	setEntries(github_com_jtolds_gls_markF, 0xf)
+
+	initIdPool()
 }
 
-func addStackTag(tag uint, context_call func()) {
+func addStackTag(tag uint32, context_call func()) {
 	if context_call == nil {
 		return
 	}
@@ -53,57 +55,57 @@ func addStackTag(tag uint, context_call func()) {
 // is easier. it shouldn't add any runtime cost in non-js builds.
 
 //go:noinline
-func github_com_jtolds_gls_markS(tag uint, cb func()) { _m(tag, cb) }
+func github_com_jtolds_gls_markS(tag uint32, cb func()) { _m(tag, cb) }
 
 //go:noinline
-func github_com_jtolds_gls_mark0(tag uint, cb func()) { _m(tag, cb) }
+func github_com_jtolds_gls_mark0(tag uint32, cb func()) { _m(tag, cb) }
 
 //go:noinline
-func github_com_jtolds_gls_mark1(tag uint, cb func()) { _m(tag, cb) }
+func github_com_jtolds_gls_mark1(tag uint32, cb func()) { _m(tag, cb) }
 
 //go:noinline
-func github_com_jtolds_gls_mark2(tag uint, cb func()) { _m(tag, cb) }
+func github_com_jtolds_gls_mark2(tag uint32, cb func()) { _m(tag, cb) }
 
 //go:noinline
-func github_com_jtolds_gls_mark3(tag uint, cb func()) { _m(tag, cb) }
+func github_com_jtolds_gls_mark3(tag uint32, cb func()) { _m(tag, cb) }
 
 //go:noinline
-func github_com_jtolds_gls_mark4(tag uint, cb func()) { _m(tag, cb) }
+func github_com_jtolds_gls_mark4(tag uint32, cb func()) { _m(tag, cb) }
 
 //go:noinline
-func github_com_jtolds_gls_mark5(tag uint, cb func()) { _m(tag, cb) }
+func github_com_jtolds_gls_mark5(tag uint32, cb func()) { _m(tag, cb) }
 
 //go:noinline
-func github_com_jtolds_gls_mark6(tag uint, cb func()) { _m(tag, cb) }
+func github_com_jtolds_gls_mark6(tag uint32, cb func()) { _m(tag, cb) }
 
 //go:noinline
-func github_com_jtolds_gls_mark7(tag uint, cb func()) { _m(tag, cb) }
+func github_com_jtolds_gls_mark7(tag uint32, cb func()) { _m(tag, cb) }
 
 //go:noinline
-func github_com_jtolds_gls_mark8(tag uint, cb func()) { _m(tag, cb) }
+func github_com_jtolds_gls_mark8(tag uint32, cb func()) { _m(tag, cb) }
 
 //go:noinline
-func github_com_jtolds_gls_mark9(tag uint, cb func()) { _m(tag, cb) }
+func github_com_jtolds_gls_mark9(tag uint32, cb func()) { _m(tag, cb) }
 
 //go:noinline
-func github_com_jtolds_gls_markA(tag uint, cb func()) { _m(tag, cb) }
+func github_com_jtolds_gls_markA(tag uint32, cb func()) { _m(tag, cb) }
 
 //go:noinline
-func github_com_jtolds_gls_markB(tag uint, cb func()) { _m(tag, cb) }
+func github_com_jtolds_gls_markB(tag uint32, cb func()) { _m(tag, cb) }
 
 //go:noinline
-func github_com_jtolds_gls_markC(tag uint, cb func()) { _m(tag, cb) }
+func github_com_jtolds_gls_markC(tag uint32, cb func()) { _m(tag, cb) }
 
 //go:noinline
-func github_com_jtolds_gls_markD(tag uint, cb func()) { _m(tag, cb) }
+func github_com_jtolds_gls_markD(tag uint32, cb func()) { _m(tag, cb) }
 
 //go:noinline
-func github_com_jtolds_gls_markE(tag uint, cb func()) { _m(tag, cb) }
+func github_com_jtolds_gls_markE(tag uint32, cb func()) { _m(tag, cb) }
 
 //go:noinline
-func github_com_jtolds_gls_markF(tag uint, cb func()) { _m(tag, cb) }
+func github_com_jtolds_gls_markF(tag uint32, cb func()) { _m(tag, cb) }
 
-func _m(tag_remainder uint, cb func()) {
+func _m(tag_remainder uint32, cb func()) {
 	if tag_remainder == 0 {
 		cb()
 	} else {
@@ -111,8 +113,8 @@ func _m(tag_remainder uint, cb func()) {
 	}
 }
 
-func readStackTag() (tag uint, ok bool) {
-	var current_tag uint
+func readStackTag() (tag uint32, ok bool) {
+	var current_tag uint32
 	offset := 0
 	for {
 		batch, next_offset := getStack(offset, stackBatchSize)
@@ -125,7 +127,7 @@ func readStackTag() (tag uint, ok bool) {
 				return current_tag, true
 			}
 			current_tag <<= bitWidth
-			current_tag += uint(val)
+			current_tag += uint32(val)
 		}
 		if next_offset == 0 {
 			break
