@@ -26,20 +26,42 @@ type Values map[interface{}]interface{}
 // construction.
 type ContextManager struct {
 	extendLock               sync.RWMutex
+	extendUnit               uint32
 	values                   []Values
 	currentMaxGoroutineCount int
+}
+
+type Option struct {
+	InitialMaxGoroutineCount int
+	ExtendUnit               int
+}
+
+func newContextManager(opt Option) *ContextManager {
+	mgr := &ContextManager{values: make([]Values, opt.InitialMaxGoroutineCount)}
+	mgr.currentMaxGoroutineCount = len(mgr.values)
+	mgr.extendUnit = uint32(opt.ExtendUnit)
+	mgrRegistryMtx.Lock()
+	defer mgrRegistryMtx.Unlock()
+	mgrRegistry[mgr] = true
+	return mgr
+}
+
+func NewContextManagerWithOption(opt Option) *ContextManager {
+	if opt.InitialMaxGoroutineCount == 0 {
+		opt.InitialMaxGoroutineCount = initialMaxGoroutineCount
+	}
+	if opt.ExtendUnit == 0 {
+		opt.ExtendUnit = extendUnit
+	}
+
+	return newContextManager(opt)
 }
 
 // NewContextManager returns a brand new ContextManager. It also registers the
 // new ContextManager in the ContextManager registry which is used by the Go
 // method. ContextManagers are typically defined globally at package scope.
 func NewContextManager() *ContextManager {
-	mgr := &ContextManager{values: make([]Values, initialMaxGoroutineCount)}
-	mgr.currentMaxGoroutineCount = len(mgr.values)
-	mgrRegistryMtx.Lock()
-	defer mgrRegistryMtx.Unlock()
-	mgrRegistry[mgr] = true
-	return mgr
+	return newContextManager(Option{InitialMaxGoroutineCount: initialMaxGoroutineCount, ExtendUnit: extendUnit})
 }
 
 // Unregister removes a ContextManager from the global registry, used by the
