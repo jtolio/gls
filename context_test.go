@@ -128,16 +128,18 @@ func BenchmarkGetValue(b *testing.B) {
 	mgr.SetValues(gls.Values{"test_key": "test_val"}, func() {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			wg.Add(1)
-			gls.Go(func() {
-				defer wg.Done()
-				val, ok := mgr.GetValue("test_key")
-				if !ok || val != "test_val" {
-					b.FailNow()
-				}
-			})
+			for j := 0; j < 100; j++ {
+				wg.Add(1)
+				gls.Go(func() {
+					defer wg.Done()
+					val, ok := mgr.GetValue("test_key")
+					if !ok || val != "test_val" {
+						b.FailNow()
+					}
+				})
+			}
+			wg.Wait()
 		}
-		wg.Wait()
 	})
 }
 
@@ -145,13 +147,15 @@ func BenchmarkSetValues(b *testing.B) {
 	mgr := gls.NewContextManager()
 	wg := sync.WaitGroup{}
 	for i := 0; i < b.N/2; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			mgr.SetValues(gls.Values{"test_key": "test_val"}, func() {
-				mgr.SetValues(gls.Values{"test_key2": "test_val2"}, func() {})
-			})
-		}()
+		for j := 0; j < 100; j++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				mgr.SetValues(gls.Values{"test_key": "test_val"}, func() {
+					mgr.SetValues(gls.Values{"test_key2": "test_val2"}, func() {})
+				})
+			}()
+		}
+		wg.Wait()
 	}
-	wg.Wait()
 }
